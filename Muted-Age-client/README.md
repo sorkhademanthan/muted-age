@@ -2,6 +2,16 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Backend Setup
+
+The backend is located in `../thetintd-server`. To run it:
+1. Navigate to `../thetintd-server`.
+2. Run `npm install`.
+3. Create a `.env` file with your secrets (see `.env` example).
+4. Run `npm run dev` for development.
+
+Ensure MongoDB is running locally or update `MONGODB_URI` for a cloud database like Atlas for scalability.
+
 ## Available Scripts
 
 In the project directory, you can run:

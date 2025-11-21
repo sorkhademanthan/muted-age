@@ -98,7 +98,8 @@ const HomePage = () => {
     { name: "Shop", path: "/shop" },
     { name: "New Arrivals", path: "/newarrivals" },
     { name: "Brand", path: "/brand" },
-    { name: "Journal", path: "/journal" },
+    { name: "Account", path: "/account" },
+    { name: "Track Orders", path: "/track-orders" },
     { name: "Contact", path: "/contact" }
   ];
 
@@ -119,7 +120,7 @@ const HomePage = () => {
 
       {/* CENTERED NAVIGATION */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-center">
-        <h1 className="text-3xl md:text-4xl font-extrabold mb-6 md:mb-8 drop-shadow-lg" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>tintd.</h1>
+        <h1 className="text-3xl md:text-4xl font-extrabold mb-6 md:mb-8 drop-shadow-lg text-white tracking-tighter" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>Muted Age</h1>
         <nav className="flex flex-col items-center gap-2">
             {navLinks.map((link) => (
                 <AnimatedLink key={link.name} title={link.name} path={link.path} />

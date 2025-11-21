@@ -61,7 +61,7 @@ const MainLayout = ({ children }) => {
 
       {/* CENTERED NAVIGATION */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-center">
-        <h1 className="text-4xl font-extrabold mb-6 drop-shadow-lg" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>tintd.</h1>
+        <h1 className="text-4xl font-extrabold mb-6 drop-shadow-lg" style={{ textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}>Muted Age</h1>
         <nav className="flex flex-col items-center gap-4">
           {navLinks.map((link) => (
             <motion.div

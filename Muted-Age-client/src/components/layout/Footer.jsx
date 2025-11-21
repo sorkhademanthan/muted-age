@@ -42,6 +42,7 @@ const Footer = () => {
               <h3 className="text-xs uppercase tracking-widest text-gray-500 mb-4">(Customer Care)</h3>
               <ul className="space-y-3">
                 <li><Link to="/account" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Account</Link></li>
+                <li><Link to="/track-orders" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Track Orders</Link></li>
                 <li><Link to="/store" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Our Store</Link></li>
                 <li><Link to="/faq" className="text-base text-gray-300 hover:text-white transition-colors duration-300">FAQ</Link></li>
               </ul>
@@ -62,7 +63,8 @@ const Footer = () => {
             <div>
               <h3 className="text-xs uppercase tracking-widest text-gray-500 mb-4">(Other)</h3>
               <ul className="space-y-3">
-                <li><Link to="/privacy" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Privacy</Link></li>
+                <li><Link to="/privacy-policy" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Privacy Policy</Link></li>
+                <li><Link to="/terms-of-service" className="text-base text-gray-300 hover:text-white transition-colors duration-300">Terms of Service</Link></li>
                 <li><Link to="/404" className="text-base text-gray-300 hover:text-white transition-colors duration-300">404</Link></li>
               </ul>
             </div>
@@ -75,7 +77,7 @@ const Footer = () => {
             className="text-8xl sm:text-9xl md:text-[12rem] lg:text-[14rem] font-black text-white leading-none -ml-1 md:-ml-2"
             style={{ fontFamily: 'Inter, sans-serif' }}
           >
-            tintd.
+            Muted Age
           </h2>
           <p className="text-sm text-gray-500 md:pb-6 whitespace-nowrap">
             Manthan Sorkhade ©2025
