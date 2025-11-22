@@ -92,8 +92,36 @@ const productValidators = {
     
     query('sortBy')
       .optional()
-      .isIn(['featured', 'price-low', 'price-high', 'newest', 'popular'])
+      .isIn(['featured', 'price-low', 'price-high', 'newest', 'popular', 'rating'])
       .withMessage('Invalid sort option'),
+    
+    query('minPrice')
+      .optional()
+      .isFloat({ min: 0 }).withMessage('Min price must be a positive number'),
+    
+    query('maxPrice')
+      .optional()
+      .isFloat({ min: 0 }).withMessage('Max price must be a positive number'),
+    
+    query('minRating')
+      .optional()
+      .isFloat({ min: 0, max: 5 }).withMessage('Min rating must be between 0 and 5'),
+    
+    query('tags')
+      .optional()
+      .custom((value) => {
+        if (typeof value === 'string') {
+          return value.length > 0;
+        }
+        if (Array.isArray(value)) {
+          return value.length > 0 && value.every(tag => typeof tag === 'string');
+        }
+        return false;
+      }).withMessage('Tags must be a string or array of strings'),
+    
+    query('inStock')
+      .optional()
+      .isIn(['true', 'false']).withMessage('inStock must be true or false'),
   ],
 };
 

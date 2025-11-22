@@ -12,7 +12,7 @@ const config = require('../config/config');
 const router = express.Router();
 
 // @route   GET /api/products
-// @desc    Get all products with filtering, sorting, and pagination
+// @desc    Get all products with advanced filtering, sorting, and pagination
 // @access  Public
 router.get('/', 
   productValidators.getAll,
@@ -28,6 +28,8 @@ router.get('/',
       minPrice,
       maxPrice,
       inStock,
+      tags, // NEW: Tag filtering
+      minRating, // NEW: Minimum rating filter
     } = req.query;
 
     // Build filter query
@@ -41,8 +43,14 @@ router.get('/',
       filter['variants.size'] = size;
     }
 
+    // Enhanced search: search in name, description, and tags
     if (search) {
-      filter.$text = { $search: search };
+      filter.$or = [
+        { $text: { $search: search } },
+        { tags: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
     }
 
     if (minPrice || maxPrice) {
@@ -53,6 +61,17 @@ router.get('/',
 
     if (inStock === 'true') {
       filter.totalStock = { $gt: 0 };
+    }
+
+    // NEW: Tag filtering (supports single or multiple tags)
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
+      filter.tags = { $in: tagArray };
+    }
+
+    // NEW: Minimum rating filter
+    if (minRating) {
+      filter.averageRating = { $gte: parseFloat(minRating) };
     }
 
     // Build sort query
@@ -69,6 +88,9 @@ router.get('/',
         break;
       case 'popular':
         sort = { soldCount: -1 };
+        break;
+      case 'rating': // NEW: Sort by rating
+        sort = { averageRating: -1, reviewCount: -1 };
         break;
       case 'featured':
       default:
@@ -98,6 +120,46 @@ router.get('/',
     });
   })
 );
+
+// @route   GET /api/products/autocomplete
+// @desc    Autocomplete search for products
+// @access  Public
+router.get('/autocomplete', asyncHandler(async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || q.trim().length < 2) {
+    return ApiResponse.success(res, [], 'Query too short');
+  }
+
+  // Search in name, tags, and category with regex for autocomplete
+  const suggestions = await Product.find({
+    isActive: true,
+    $or: [
+      { name: { $regex: q, $options: 'i' } },
+      { tags: { $regex: q, $options: 'i' } },
+      { category: { $regex: q, $options: 'i' } },
+      { brand: { $regex: q, $options: 'i' } }
+    ]
+  })
+    .select('name category price images tags brand')
+    .limit(5)
+    .lean();
+
+  // Format suggestions for frontend
+  const formattedSuggestions = suggestions.map(product => ({
+    id: product._id,
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    image: product.images && product.images.length > 0 
+      ? product.images.find(img => img.isPrimary)?.url || product.images[0].url
+      : null,
+    tags: product.tags,
+    brand: product.brand
+  }));
+
+  return ApiResponse.success(res, formattedSuggestions, `Found ${formattedSuggestions.length} suggestions`);
+}));
 
 // @route   GET /api/products/featured
 // @desc    Get featured products
