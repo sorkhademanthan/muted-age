@@ -17,6 +17,9 @@ export const CheckoutProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Cart drawer state
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+
   // Checkout state
   const [checkoutStep, setCheckoutStep] = useState('cart'); // cart, summary, mobile, delivery, payment, confirmation
   const [selectedSize, setSelectedSize] = useState(null);
@@ -57,6 +60,9 @@ export const CheckoutProvider = ({ children }) => {
     } else {
       setCart([...cart, { ...product, size, quantity: 1 }]);
     }
+    
+    // Open cart drawer when item is added
+    setIsCartDrawerOpen(true);
   };
 
   // Remove from cart
@@ -129,6 +135,10 @@ export const CheckoutProvider = ({ children }) => {
     clearCart,
     buyNow,
     cartItemCount,
+
+    // Cart Drawer
+    isCartDrawerOpen,
+    setIsCartDrawerOpen,
 
     // Checkout
     checkoutStep,

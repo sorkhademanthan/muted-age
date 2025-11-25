@@ -1,7 +1,7 @@
 // src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CheckoutProvider } from "./contexts/CheckoutContext";
+import { CheckoutProvider, useCheckout } from "./contexts/CheckoutContext";
 import Footer from "./components/layout/Footer";
 import HomePage from "./components/layout/HomePage";
 import Shop from "./pages/Shop";
@@ -18,12 +18,14 @@ import Checkout from "./pages/Checkout";
 import Payment from "./pages/Payment";
 import UPIPayment from "./pages/UPIPayment";
 import OrderConfirmation from "./pages/OrderConfirmation";
+import CartDrawer from "./components/CartDrawer";
 
-function App() {
+const AppContent = () => {
+  const { isCartDrawerOpen, setIsCartDrawerOpen } = useCheckout();
+
   return (
-    <BrowserRouter>
-      <CheckoutProvider>
-        <Routes>
+    <>
+      <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/brand" element={<Brand />} />
@@ -45,6 +47,16 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />
+        <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} />
+      </>
+  );
+};
+
+function App() {
+  return (
+    <BrowserRouter>
+      <CheckoutProvider>
+        <AppContent />
       </CheckoutProvider>
     </BrowserRouter>
   );
