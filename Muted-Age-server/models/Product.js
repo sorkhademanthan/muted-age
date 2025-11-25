@@ -36,6 +36,9 @@ const ProductImageSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  publicId: {
+    type: String,
+  },
   alt: {
     type: String,
     default: 'Product image',

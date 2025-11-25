@@ -8,6 +8,8 @@ const { AppError } = require('../middleware/errorHandler');
 const productValidators = require('../validators/productValidator');
 const validate = require('../middleware/validator');
 const config = require('../config/config');
+const upload = require('../config/multer');
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router();
 
@@ -330,6 +332,141 @@ router.delete('/:id',
     await product.save();
 
     return ApiResponse.success(res, null, 'Product deleted successfully');
+  })
+);
+
+// ============================================================
+// IMAGE MANAGEMENT ROUTES (Chapter 2.4)
+// ============================================================
+
+// @route   POST /api/products/:id/images
+// @desc    Upload multiple images to product
+// @access  Private/Admin
+router.post('/:id/images',
+  authMiddleware,
+  adminOnly,
+  upload.array('images', 10),
+  asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
+
+    if (!req.files || req.files.length === 0) {
+      throw new AppError('No images provided', 400);
+    }
+
+    const { markPrimary } = req.body;
+
+    const uploadPromises = req.files.map(file => 
+      uploadToCloudinary(file.buffer, 'products')
+    );
+
+    const uploadedImages = await Promise.all(uploadPromises);
+
+    const newImages = uploadedImages.map((img, index) => ({
+      url: img.url,
+      publicId: img.publicId,
+      alt: req.body.alt || `${product.name} image`,
+      isPrimary: false,
+    }));
+
+    if (markPrimary === 'true' && product.images.length === 0) {
+      newImages[0].isPrimary = true;
+    }
+
+    product.images.push(...newImages);
+    await product.save();
+
+    return ApiResponse.success(
+      res, 
+      { 
+        product, 
+        uploadedCount: newImages.length 
+      }, 
+      `${newImages.length} image(s) uploaded successfully`, 
+      201
+    );
+  })
+);
+
+// @route   DELETE /api/products/:id/images/:imageId
+// @desc    Delete image from product
+// @access  Private/Admin
+router.delete('/:id/images/:imageId',
+  authMiddleware,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
+
+    const imageIndex = product.images.findIndex(
+      img => img._id.toString() === req.params.imageId
+    );
+
+    if (imageIndex === -1) {
+      throw new AppError('Image not found', 404);
+    }
+
+    const imageToDelete = product.images[imageIndex];
+
+    if (imageToDelete.publicId) {
+      await deleteFromCloudinary(imageToDelete.publicId);
+    }
+
+    product.images.splice(imageIndex, 1);
+
+    if (imageToDelete.isPrimary && product.images.length > 0) {
+      product.images[0].isPrimary = true;
+    }
+
+    await product.save();
+
+    return ApiResponse.success(res, product, 'Image deleted successfully');
+  })
+);
+
+// @route   PUT /api/products/:id/images/:imageId
+// @desc    Update image metadata (alt text, set as primary)
+// @access  Private/Admin
+router.put('/:id/images/:imageId',
+  authMiddleware,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      throw new AppError('Product not found', 404);
+    }
+
+    const image = product.images.find(
+      img => img._id.toString() === req.params.imageId
+    );
+
+    if (!image) {
+      throw new AppError('Image not found', 404);
+    }
+
+    const { alt, isPrimary } = req.body;
+
+    if (alt) {
+      image.alt = alt;
+    }
+
+    if (isPrimary === true) {
+      product.images.forEach(img => {
+        img.isPrimary = false;
+      });
+      image.isPrimary = true;
+    }
+
+    await product.save();
+
+    return ApiResponse.success(res, product, 'Image updated successfully');
   })
 );
 
