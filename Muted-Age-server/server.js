@@ -11,6 +11,7 @@ const logger = require('./utils/logger');
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
+const cartRoutes = require('./routes/cart');
 
 const app = express();
 const PORT = config.port;
@@ -64,6 +65,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
 
 // 404 Handler
 app.use((req, res) => {
