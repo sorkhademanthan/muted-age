@@ -1,6 +1,7 @@
 // src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { CheckoutProvider } from "./contexts/CheckoutContext";
 import Footer from "./components/layout/Footer";
 import HomePage from "./components/layout/HomePage";
 import Shop from "./pages/Shop";
@@ -12,24 +13,39 @@ import NewArrivals from "./pages/NewArrivals";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import Payment from "./pages/Payment";
+import UPIPayment from "./pages/UPIPayment";
+import OrderConfirmation from "./pages/OrderConfirmation";
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/brand" element={<Brand />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/track-orders" element={<TrackOrders />} />
-        <Route path="/newarrivals" element={<NewArrivals />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/404" element={<NotFound />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Footer />
+      <CheckoutProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route path="/brand" element={<Brand />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/track-orders" element={<TrackOrders />} />
+          <Route path="/newarrivals" element={<NewArrivals />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          
+          {/* Checkout Flow Routes */}
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/payment/upi" element={<UPIPayment />} />
+          <Route path="/order-confirmation" element={<OrderConfirmation />} />
+          
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Footer />
+      </CheckoutProvider>
     </BrowserRouter>
   );
 }

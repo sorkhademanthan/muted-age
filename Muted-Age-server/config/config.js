@@ -24,11 +24,11 @@ const config = {
     from: process.env.EMAIL_FROM || 'Muted Age <noreply@mutedage.com>',
   },
 
-  // Payment
-  stripe: {
-    publicKey: process.env.STRIPE_PUBLIC_KEY,
-    secretKey: process.env.STRIPE_SECRET_KEY,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  // Payment (Razorpay)
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID,
+    keySecret: process.env.RAZORPAY_KEY_SECRET,
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
   },
 
   // File Upload
