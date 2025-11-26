@@ -146,8 +146,8 @@ const OrderSchema = new mongoose.Schema({
   // Identification
   orderNumber: {
     type: String,
-    unique: true,
     // Not required - generated automatically in pre-save hook
+    // unique index defined separately below
     match: [/^MA-\d{4}-\d{3}$/, 'Invalid order number format'],
   },
   

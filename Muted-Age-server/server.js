@@ -12,6 +12,9 @@ const logger = require('./utils/logger');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/orders');
+const reviewRoutes = require('./routes/reviews');
+const userRoutes = require('./routes/user');
 
 const app = express();
 const PORT = config.port;
@@ -66,6 +69,10 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/products', reviewRoutes); // Product reviews
+app.use('/api/reviews', reviewRoutes); // Review management
+app.use('/api/user', userRoutes); // User profile, wishlist, addresses
 
 // 404 Handler
 app.use((req, res) => {
