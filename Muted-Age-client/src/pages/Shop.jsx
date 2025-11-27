@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useCheckout } from '../contexts/CheckoutContext';
@@ -15,6 +15,7 @@ const Shop = () => {
   const products = [
     { 
       id: 1, 
+      slug: 'tailored-overcoat',
       name: 'Tailored Overcoat', 
       price: 2890.00, 
       image: 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=1200&q=95',
@@ -24,6 +25,7 @@ const Shop = () => {
     },
     { 
       id: 2, 
+      slug: 'cashmere-crewneck',
       name: 'Cashmere Crewneck', 
       price: 1290.00, 
       image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=1200&q=95',
@@ -33,6 +35,7 @@ const Shop = () => {
     },
     { 
       id: 3, 
+      slug: 'wool-tailored-trousers',
       name: 'Wool Tailored Trousers', 
       price: 890.00, 
       image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=1200&q=95',
@@ -42,6 +45,7 @@ const Shop = () => {
     },
     { 
       id: 4, 
+      slug: 'leather-tote',
       name: 'Leather Tote', 
       price: 1890.00, 
       image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=1200&q=95',
@@ -51,6 +55,7 @@ const Shop = () => {
     },
     { 
       id: 5, 
+      slug: 'silk-minimalist-shirt',
       name: 'Silk Minimalist Shirt', 
       price: 690.00, 
       image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=1200&q=95',
@@ -60,6 +65,7 @@ const Shop = () => {
     },
     { 
       id: 6, 
+      slug: 'wide-leg-denim',
       name: 'Wide-Leg Denim', 
       price: 590.00, 
       image: 'https://images.unsplash.com/photo-1542272454315-7f6ab6973859?w=1200&q=95',
@@ -150,20 +156,25 @@ const Shop = () => {
         {/* Luxury Product Grid - Generous Spacing */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-24">
           {products.map((product, index) => (
-            <motion.div
+            <Link 
+              to={`/products/${product.slug}`}
+              state={{ demoProduct: product }}
               key={product.id}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ 
-                duration: 0.8, 
-                delay: index * 0.1,
-                ease: [0.22, 1, 0.36, 1] 
-              }}
-              onMouseEnter={() => setHoveredProduct(product.id)}
-              onMouseLeave={() => setHoveredProduct(null)}
-              className="group cursor-pointer"
+              style={{ textDecoration: 'none', color: 'inherit' }}
             >
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ 
+                  duration: 0.8, 
+                  delay: index * 0.1,
+                  ease: [0.22, 1, 0.36, 1] 
+                }}
+                onMouseEnter={() => setHoveredProduct(product.id)}
+                onMouseLeave={() => setHoveredProduct(null)}
+                className="group cursor-pointer"
+              >
               {/* Premium Image Container */}
               <div className="relative aspect-[3/4] overflow-hidden bg-gray-50 mb-6">
                 {/* Primary Image */}
@@ -272,6 +283,7 @@ const Shop = () => {
                 </p>
               </motion.div>
             </motion.div>
+            </Link>
           ))}
         </div>
       </div>

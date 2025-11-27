@@ -1,283 +1,419 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, X, Tag } from 'lucide-react';
-import { useCheckout } from '../contexts/CheckoutContext';
-import Header from '../components/Header';
-import MobileVerification from '../components/checkout/MobileVerification';
-import DeliveryDetails from '../components/checkout/DeliveryDetails';
+import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { orderService, userService, cartService } from '../services';
 
-const Checkout = () => {
+function Checkout() {
+  const { cart, refreshCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { 
-    cart, 
-    removeFromCart,
-    subtotal,
-    tax,
-    shipping,
-    discount,
-    total,
-    appliedCoupon,
-    applyCoupon,
-    removeCoupon
-  } = useCheckout();
 
-  const [expandedItems, setExpandedItems] = useState(false);
-  const [couponCode, setCouponCode] = useState('');
-  const [couponMessage, setCouponMessage] = useState('');
-  const [showCouponList, setShowCouponList] = useState(false);
-  const [currentStep, setCurrentStep] = useState('mobile'); // mobile, delivery, payment
+  const [loading, setLoading] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [error, setError] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [useExistingAddress, setUseExistingAddress] = useState(false);
 
-  // Available coupons
-  const availableCoupons = [
-    { code: 'WELCOME10', discount: '10%', description: 'Welcome offer - 10% off' },
-    { code: 'SAVE20', discount: '20%', description: 'Save 20% on your order' },
-    { code: 'FIRST50', discount: '50%', description: 'First purchase special' }
-  ];
+  const [shippingAddress, setShippingAddress] = useState({
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    street: '',
+    apartment: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'United States',
+    phone: user?.phone || '',
+  });
 
-  const handleApplyCoupon = () => {
-    const result = applyCoupon(couponCode);
-    setCouponMessage(result.message);
-    if (result.success) {
-      setCouponCode('');
+  const [sameAsShipping, setSameAsShipping] = useState(true);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [orderNotes, setOrderNotes] = useState('');
+
+  useEffect(() => {
+    loadSavedAddresses();
+    validateCartBeforeCheckout();
+  }, []);
+
+  const loadSavedAddresses = async () => {
+    try {
+      const response = await userService.getAddresses();
+      setSavedAddresses(response.data || []);
+      
+      const defaultAddress = response.data?.find(addr => addr.isDefault);
+      if (defaultAddress) {
+        setShippingAddress({
+          firstName: defaultAddress.firstName,
+          lastName: defaultAddress.lastName,
+          street: defaultAddress.street,
+          apartment: defaultAddress.apartment || '',
+          city: defaultAddress.city,
+          state: defaultAddress.state,
+          zipCode: defaultAddress.zipCode,
+          country: defaultAddress.country,
+          phone: defaultAddress.phone,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading addresses:', error);
     }
-    setTimeout(() => setCouponMessage(''), 3000);
   };
 
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const validateCartBeforeCheckout = async () => {
+    setValidating(true);
+    try {
+      await cartService.validateCart();
+    } catch (error) {
+      setError('Some items in your cart are no longer available. Please review your cart.');
+    } finally {
+      setValidating(false);
+    }
+  };
 
-  if (cart.length === 0) {
+  const handleUseExistingAddress = (address) => {
+    setShippingAddress({
+      firstName: address.firstName,
+      lastName: address.lastName,
+      street: address.street,
+      apartment: address.apartment || '',
+      city: address.city,
+      state: address.state,
+      zipCode: address.zipCode,
+      country: address.country,
+      phone: address.phone,
+    });
+    setUseExistingAddress(false);
+  };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const orderData = {
+        shippingAddress: {
+          ...shippingAddress,
+          type: 'shipping',
+        },
+        billingAddress: sameAsShipping ? {
+          ...shippingAddress,
+          type: 'billing',
+        } : {
+          ...shippingAddress,
+          type: 'billing',
+        },
+        paymentMethod: 'COD',
+        orderNotes: orderNotes,
+      };
+
+      if (saveAddress) {
+        try {
+          await userService.addAddress({
+            ...shippingAddress,
+            type: 'shipping',
+          });
+        } catch (err) {
+          console.error('Failed to save address:', err);
+        }
+      }
+
+      const response = await orderService.createOrder(orderData);
+      console.log('✅ Order created:', response.data);
+
+      await refreshCart();
+      navigate(`/order-confirmation/${response.data._id}`);
+
+    } catch (err) {
+      console.error('❌ Order creation failed:', err);
+      setError(err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!cart || cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-white">
-        <Header />
-        <div className="flex flex-col items-center justify-center min-h-[80vh] px-6">
-          <h2 
-            className="text-4xl md:text-5xl tracking-[0.3em] mb-4"
-            style={{ fontFamily: 'Didot, serif' }}
-          >
-            NO ITEMS TO CHECKOUT
-          </h2>
-          <button
-            onClick={() => navigate('/shop')}
-            className="mt-8 px-8 py-3 bg-black text-white text-xs tracking-[0.3em] hover:bg-gray-800 transition-colors"
-          >
-            CONTINUE SHOPPING
-          </button>
-        </div>
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <h2>Your cart is empty</h2>
+        <button 
+          onClick={() => navigate('/shop')}
+          style={{ marginTop: '20px', padding: '10px 20px', background: '#000', color: '#fff', border: 'none', cursor: 'pointer' }}
+        >
+          Continue Shopping
+        </button>
       </div>
     );
   }
 
+  if (validating) {
+    return <div style={{ padding: '40px', textAlign: 'center' }}>Validating cart...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
-      
-      <div className="max-w-3xl mx-auto px-6 py-24 mt-16">
-        {/* Title */}
-        <motion.h1 
-          className="text-4xl md:text-5xl tracking-[0.3em] mb-12"
-          style={{ fontFamily: 'Didot, serif' }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          ORDER SUMMARY
-        </motion.h1>
+    <div className="checkout-page" style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1>Checkout</h1>
 
-        {/* Order Summary Card */}
-        <div className="bg-gray-50 p-6 mb-8">
-          {/* Header - Always Visible */}
-          <div 
-            className="flex justify-between items-center cursor-pointer"
-            onClick={() => setExpandedItems(!expandedItems)}
-          >
-            <div>
-              <h3 className="text-lg font-medium mb-1">
-                {itemCount} {itemCount === 1 ? 'Item' : 'Items'}
-              </h3>
-              <p className="text-2xl font-semibold">${total.toFixed(2)}</p>
-            </div>
-            <button className="p-2 hover:bg-gray-200 rounded-full transition-colors">
-              {expandedItems ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            </button>
-          </div>
-
-          {/* Expanded Items List */}
-          <AnimatePresence>
-            {expandedItems && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="mt-6 pt-6 border-t border-gray-300 space-y-4">
-                  {cart.map((item) => (
-                    <div 
-                      key={`${item.id}-${item.size}`}
-                      className="flex gap-4"
-                    >
-                      {/* Image */}
-                      <div className="w-20 h-24 bg-gray-200 flex-shrink-0">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-
-                      {/* Details */}
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">{item.brand}</p>
-                            <h4 className="font-medium text-sm mb-1">{item.name}</h4>
-                            <p className="text-xs text-gray-600">
-                              Size: {item.size} | Qty: {item.quantity}
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeFromCart(item.id, item.size);
-                              }}
-                              className="p-1 hover:bg-gray-300 rounded-full transition-colors"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Price Breakdown */}
-                  <div className="pt-4 border-t border-gray-300 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span>${subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tax (18%)</span>
-                      <span>${tax.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Shipping</span>
-                      <span className={shipping === 0 ? 'text-green-600 font-medium' : ''}>
-                        {shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}
-                      </span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount ({appliedCoupon?.code})</span>
-                        <span>-${discount.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {error && (
+        <div style={{ background: '#fee', border: '1px solid red', padding: '15px', marginTop: '20px', color: 'red', borderRadius: '5px' }}>
+          {error}
         </div>
+      )}
 
-        {/* Coupon Section */}
-        <div className="bg-white border border-gray-300 p-6 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Tag size={18} />
-            <h3 className="font-medium">Have a coupon code?</h3>
-          </div>
-
-          {appliedCoupon ? (
-            <div className="flex items-center justify-between bg-green-50 border border-green-200 p-4 rounded">
-              <div>
-                <p className="font-medium text-green-700">{appliedCoupon.code}</p>
-                <p className="text-sm text-green-600">{appliedCoupon.description}</p>
-              </div>
-              <button
-                onClick={removeCoupon}
-                className="text-red-600 hover:text-red-700 text-sm font-medium"
-              >
-                Remove
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code"
-                  className="flex-1 px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-black text-sm"
-                />
+      <form onSubmit={handlePlaceOrder}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '40px', marginTop: '30px' }}>
+          
+          <div>
+            {savedAddresses.length > 0 && (
+              <div style={{ marginBottom: '30px' }}>
                 <button
-                  onClick={handleApplyCoupon}
-                  className="px-6 py-2 bg-black text-white text-xs tracking-wider hover:bg-gray-800 transition-colors"
+                  type="button"
+                  onClick={() => setUseExistingAddress(!useExistingAddress)}
+                  style={{ padding: '10px 20px', marginBottom: '15px', cursor: 'pointer' }}
                 >
-                  APPLY
+                  {useExistingAddress ? 'Enter New Address' : 'Use Saved Address'}
                 </button>
-              </div>
-              
-              {couponMessage && (
-                <p className={`text-sm mb-3 ${couponMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
-                  {couponMessage}
-                </p>
-              )}
 
-              <button
-                onClick={() => setShowCouponList(!showCouponList)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                {showCouponList ? 'Hide' : 'View'} available coupons
-              </button>
-
-              <AnimatePresence>
-                {showCouponList && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="mt-4 space-y-2"
-                  >
-                    {availableCoupons.map((coupon) => (
+                {useExistingAddress && (
+                  <div style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '5px' }}>
+                    <h3>Select Address:</h3>
+                    {savedAddresses.map(addr => (
                       <div 
-                        key={coupon.code}
-                        className="border border-dashed border-gray-300 p-3 flex justify-between items-center"
+                        key={addr._id}
+                        onClick={() => handleUseExistingAddress(addr)}
+                        style={{ 
+                          padding: '15px', 
+                          border: '1px solid #ddd', 
+                          marginBottom: '10px',
+                          cursor: 'pointer',
+                          background: '#f9f9f9',
+                          borderRadius: '5px',
+                        }}
                       >
-                        <div>
-                          <p className="font-mono font-bold text-sm">{coupon.code}</p>
-                          <p className="text-xs text-gray-600">{coupon.description}</p>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setCouponCode(coupon.code);
-                            handleApplyCoupon();
-                          }}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Apply
-                        </button>
+                        <p><strong>{addr.firstName} {addr.lastName}</strong></p>
+                        <p>{addr.street} {addr.apartment}</p>
+                        <p>{addr.city}, {addr.state} {addr.zipCode}</p>
+                        <p>{addr.phone}</p>
+                        {addr.isDefault && <span style={{ color: 'green' }}>✓ Default</span>}
                       </div>
                     ))}
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </>
-          )}
+              </div>
+            )}
+
+            {!useExistingAddress && (
+              <>
+                <h2>Shipping Address</h2>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>First Name *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.firstName}
+                      onChange={(e) => setShippingAddress({...shippingAddress, firstName: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>Last Name *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.lastName}
+                      onChange={(e) => setShippingAddress({...shippingAddress, lastName: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px' }}>Street Address *</label>
+                  <input
+                    type="text"
+                    value={shippingAddress.street}
+                    onChange={(e) => setShippingAddress({...shippingAddress, street: e.target.value})}
+                    required
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                  />
+                </div>
+
+                <div style={{ marginTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px' }}>Apartment, suite, etc. (optional)</label>
+                  <input
+                    type="text"
+                    value={shippingAddress.apartment}
+                    onChange={(e) => setShippingAddress({...shippingAddress, apartment: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginTop: '15px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>City *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.city}
+                      onChange={(e) => setShippingAddress({...shippingAddress, city: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>State *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.state}
+                      onChange={(e) => setShippingAddress({...shippingAddress, state: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px' }}>ZIP Code *</label>
+                    <input
+                      type="text"
+                      value={shippingAddress.zipCode}
+                      onChange={(e) => setShippingAddress({...shippingAddress, zipCode: e.target.value})}
+                      required
+                      style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px' }}>Phone *</label>
+                  <input
+                    type="tel"
+                    value={shippingAddress.phone}
+                    onChange={(e) => setShippingAddress({...shippingAddress, phone: e.target.value})}
+                    required
+                    style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                  />
+                </div>
+
+                <div style={{ marginTop: '15px' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                    />
+                    {' '}Save this address for future orders
+                  </label>
+                </div>
+
+                <div style={{ marginTop: '20px' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={sameAsShipping}
+                      onChange={(e) => setSameAsShipping(e.target.checked)}
+                    />
+                    {' '}Billing address same as shipping
+                  </label>
+                </div>
+              </>
+            )}
+
+            <div style={{ marginTop: '30px' }}>
+              <label style={{ display: 'block', marginBottom: '5px' }}>Order Notes (optional)</label>
+              <textarea
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+                placeholder="Any special instructions for your order..."
+                rows="4"
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px', position: 'sticky', top: '20px' }}>
+              <h2>Order Summary</h2>
+
+              <div style={{ maxHeight: '300px', overflowY: 'auto', marginTop: '20px' }}>
+                {cart.items.map(item => (
+                  <div key={item._id} style={{ display: 'flex', gap: '10px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+                    <img 
+                      src={item.product.images[0]?.url} 
+                      alt={item.product.name}
+                      style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '5px' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 'bold', marginBottom: '5px', fontSize: '14px' }}>{item.product.name}</p>
+                      <p style={{ fontSize: '12px', color: '#666' }}>
+                        Size: {item.variant.size} × {item.quantity}
+                      </p>
+                      <p style={{ fontSize: '14px', fontWeight: 'bold' }}>${item.subtotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px', marginTop: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span>Subtotal:</span>
+                  <span>${cart.subtotal.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span>Shipping:</span>
+                  <span>${cart.shipping.toFixed(2)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <span>Tax:</span>
+                  <span>${cart.tax.toFixed(2)}</span>
+                </div>
+                {cart.discount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: 'green' }}>
+                    <span>Discount:</span>
+                    <span>-${cart.discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 'bold', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #ddd' }}>
+                  <span>Total:</span>
+                  <span>${cart.total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '5px' }}>
+                <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>Payment Method:</p>
+                <p>💵 Cash on Delivery (COD)</p>
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                  Pay when you receive your order
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '15px',
+                  background: loading ? '#ccc' : '#000',
+                  color: '#fff',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  marginTop: '20px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  borderRadius: '5px',
+                }}
+              >
+                {loading ? 'Placing Order...' : 'Place Order'}
+              </button>
+
+              <p style={{ fontSize: '11px', color: '#666', marginTop: '10px', textAlign: 'center' }}>
+                By placing your order, you agree to our Terms of Service
+              </p>
+            </div>
+          </div>
         </div>
-
-        {/* Checkout Steps */}
-        {currentStep === 'mobile' && (
-          <MobileVerification onVerified={() => setCurrentStep('delivery')} />
-        )}
-
-        {currentStep === 'delivery' && (
-          <DeliveryDetails onContinue={() => navigate('/payment')} />
-        )}
-      </div>
+      </form>
     </div>
   );
-};
+}
 
 export default Checkout;

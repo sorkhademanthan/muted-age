@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Heart, User, MessageCircle } from 'lucide-react';
 import { useCheckout } from '../contexts/CheckoutContext';
 import { motion } from 'framer-motion';
 
@@ -36,6 +36,18 @@ const Header = () => {
             NEW ARRIVALS
           </Link>
           <Link 
+            to="/orders" 
+            className="text-xs tracking-[0.3em] hover:text-gray-600 transition-colors"
+          >
+            ORDERS
+          </Link>
+          <Link 
+            to="/support" 
+            className="text-xs tracking-[0.3em] hover:text-gray-600 transition-colors"
+          >
+            SUPPORT
+          </Link>
+          <Link 
             to="/brand" 
             className="text-xs tracking-[0.3em] hover:text-gray-600 transition-colors"
           >
@@ -43,22 +55,53 @@ const Header = () => {
           </Link>
         </nav>
 
-        {/* Cart Icon */}
-        <button
-          onClick={() => navigate('/cart')}
-          className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ShoppingBag size={20} />
-          {cartItemCount > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-medium"
-            >
-              {cartItemCount}
-            </motion.div>
-          )}
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          {/* Support Icon */}
+          <button
+            onClick={() => navigate('/support')}
+            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Support"
+          >
+            <MessageCircle size={20} />
+          </button>
+
+          {/* Wishlist Icon */}
+          <button
+            onClick={() => navigate('/wishlist')}
+            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Wishlist"
+          >
+            <Heart size={20} />
+          </button>
+
+          {/* Profile Icon */}
+          <button
+            onClick={() => navigate('/profile')}
+            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Profile"
+          >
+            <User size={20} />
+          </button>
+
+          {/* Cart Icon */}
+          <button
+            onClick={() => navigate('/cart')}
+            className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Cart"
+          >
+            <ShoppingBag size={20} />
+            {cartItemCount > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-medium"
+              >
+                {cartItemCount}
+              </motion.div>
+            )}
+          </button>
+        </div>
       </div>
     </header>
   );
