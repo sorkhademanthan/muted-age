@@ -15,6 +15,7 @@ const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const reviewRoutes = require('./routes/reviews');
 const userRoutes = require('./routes/user');
+const supportRoutes = require('./routes/support');
 
 const app = express();
 const PORT = config.port;
@@ -73,6 +74,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', reviewRoutes); // Product reviews
 app.use('/api/reviews', reviewRoutes); // Review management
 app.use('/api/user', userRoutes); // User profile, wishlist, addresses
+app.use('/api/support', supportRoutes); // Support & complaints system
 
 // 404 Handler
 app.use((req, res) => {

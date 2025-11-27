@@ -17,11 +17,18 @@ const config = {
   // Email
   email: {
     service: process.env.EMAIL_SERVICE || 'gmail',
+    // For Resend (recommended)
+    resendApiKey: process.env.RESEND_API_KEY,
+    // For SendGrid
+    sendgridApiKey: process.env.SENDGRID_API_KEY,
+    // For traditional SMTP (nodemailer)
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.EMAIL_PORT) || 587,
     user: process.env.EMAIL_USER,
     password: process.env.EMAIL_PASSWORD,
+    // Common settings
     from: process.env.EMAIL_FROM || 'Muted Age <noreply@mutedage.com>',
+    adminEmail: process.env.ADMIN_EMAIL || process.env.EMAIL_USER, // Admin notifications
   },
 
   // Payment (Razorpay)
